@@ -517,5 +517,10 @@ function frame() {
   renderer.render(world, cam); requestAnimationFrame(frame);
 }
 frame();
-if (QS.get('u')) find(QS.get('u'));
+// start screen: a hologram raider, so the page is never empty
+const DEMO_HOLO = new THREE.MeshBasicMaterial({ color: '#7fe8ff', transparent: true, opacity: 0.42, depthWrite: false, toneMapped: false });
+function demoStage() { const T = traits('your_name', null); buildStage(T); stage.traverse(o => { if (o.isMesh && o !== ACT.extra.pad) { o.material = DEMO_HOLO; o.castShadow = false; } }); ACT.extra.tip = null;   // nothing may recolour the shared hologram
+  const tag = new THREE.Sprite(new THREE.SpriteMaterial({ map: labelTex('THIS COULD BE YOU', { bg: '#14285a', fg: '#d9fbff', w: 640, h: 110 }), transparent: true, depthTest: false }));
+  tag.scale.set(2.6, 0.45, 1); tag.position.set(0, 3.45, 0); stage.add(tag); }
+if (QS.get('u')) find(QS.get('u')); else demoStage();
 window.ready = true;
