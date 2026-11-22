@@ -51,7 +51,8 @@ function traits(h, pos) {
   const J = jobOf(h), W = pos ? waveOf(pos) : null;
   let sec = null; { const n = cyrb('raider:sec:' + h) % 100; let acc = 0; for (const s of SECOND) { acc += s[2]; if (n < acc) { sec = s; break; } } }
   if (W && W[1] === 'Snack Duty') sec = SECOND[2];                     // snack duty always brings chips
-  const sp = SPECIAL[h] || SPECIAL['#' + sha256js(enc('raid51-req' + h)).slice(0, 16)] || null;   // public copy stores requests by scrambled handle if (sp && (sp.held === 'paintball' || sp.held === 'foam')) sec = SECOND.find(x => x[0] === sp.held);
+  const sp = SPECIAL[h] || SPECIAL['#' + sha256js(enc('raid51-req' + h)).slice(0, 16)] || null;   // public copy stores requests by scrambled handle
+  if (sp && SECOND.some(x => x[0] === sp.held)) sec = SECOND.find(x => x[0] === sp.held);
   return { h, pos, job: J, wave: W, sec, special: sp, ride: J[0] === 'Getaway Driver' ? pick(h, 'ride', RIDES) : null,
     skin: pick(h, 'skin', SKIN), shirt: W && W[1] === 'Front Runner' ? '#f5c542' : pick(h, 'shirt', SHIRTS), cap: pick(h, 'cap', SHIRTS), pants: pick(h, 'pants', ['#3b3f4a', '#4a4f3a', '#2f3b5a', '#5a4a3a']) };
 }
@@ -230,6 +231,30 @@ function vehicle(kind, col) {
   return v;
 }
 
+function bus() { const b = new THREE.Group(), Y = M('#f2b705'), glass = MS('#2b3a52', { metalness: 0.3, roughness: 0.1 });
+  mesh(new THREE.BoxGeometry(2.4, 2.3, 7.2), Y, b, 0, 1.75, 0); mesh(new THREE.BoxGeometry(2.42, 0.25, 7.22), M(DARK), b, 0, 0.95, 0);
+  for (const s of [-1, 1]) for (let i = 0; i < 6; i++) mesh(new THREE.BoxGeometry(0.05, 0.7, 0.85), glass, b, 1.21 * s, 2.3, -2.7 + i * 1.0);
+  mesh(new THREE.BoxGeometry(2.1, 0.9, 0.05), glass, b, 0, 2.3, 3.61); mesh(new THREE.PlaneGeometry(1.7, 0.42), new THREE.MeshBasicMaterial({ map: labelTex('RAID BUS', { bg: '#1d1e24', fg: '#ffd84a', w: 300, h: 80 }) }), b, 0, 3.12, 3.62);
+  for (const [x, z] of [[-1.15, 2.4], [1.15, 2.4], [-1.15, -2.3], [1.15, -2.3]]) { const w = wheel(0.55, 0.4); w.position.set(x, 0.55, z); b.add(w); }
+  for (const s of [-1, 1]) mesh(new THREE.CircleGeometry(0.16, 10), new THREE.MeshBasicMaterial({ color: '#fff4c0' }), b, s * 0.85, 1.25, 3.61); return b; }
+function foodTruck() { const t = new THREE.Group(), body = M('#e9e4d8'), red = M('#d6402b');
+  mesh(new THREE.BoxGeometry(2.2, 2.3, 4.6), body, t, 0, 1.75, 0); mesh(new THREE.BoxGeometry(2.22, 0.3, 4.62), red, t, 0, 0.75, 0);
+  mesh(new THREE.BoxGeometry(0.05, 0.9, 2.4), M('#3a2a1e'), t, 1.11, 2.0, -0.3); const aw = mesh(new THREE.BoxGeometry(0.7, 0.06, 2.6), red, t, 1.4, 2.6, -0.3); aw.rotation.z = -0.35;
+  mesh(new THREE.BoxGeometry(0.4, 0.08, 2.4), M('#b9bcc4'), t, 1.3, 1.52, -0.3);
+  mesh(new THREE.PlaneGeometry(2.0, 0.55), new THREE.MeshBasicMaterial({ map: labelTex('KEBAB', { bg: '#d6402b', fg: '#fff', w: 300, h: 90 }) }), t, 1.12, 3.15, -0.3).rotation.y = Math.PI / 2;
+  const sk = new THREE.Group(); sk.position.set(0, 3.0, 0.4); t.add(sk); mesh(new THREE.CylinderGeometry(0.04, 0.04, 1.6, 6), M('#b9bcc4'), sk, 0, 0.6, 0);
+  ['#a0522d', '#e8c27a', '#c8423a', '#6aa36f', '#a0522d', '#e8c27a'].forEach((c, i) => mesh(new THREE.SphereGeometry(0.22, 10, 8), M(c), sk, 0, 0.1 + i * 0.22, 0));
+  mesh(new THREE.BoxGeometry(2.0, 0.6, 0.05), MS('#2b3a52', { metalness: 0.3, roughness: 0.1 }), t, 0, 2.25, 2.31);
+  for (const [x, z] of [[-1.0, 1.5], [1.0, 1.5], [-1.0, -1.5], [1.0, -1.5]]) { const w = wheel(0.48, 0.34); w.position.set(x, 0.48, z); t.add(w); } return t; }
+function ufo() { const u = new THREE.Group(); u.position.y = 0; const hull = MS('#c9ced6', { metalness: 0.7, roughness: 0.25 });
+  const disc = mesh(new THREE.SphereGeometry(2.0, 28, 12), hull, u, 0, 3.4, 0); disc.scale.set(1, 0.24, 1);
+  mesh(new THREE.SphereGeometry(0.9, 20, 12, 0, Math.PI * 2, 0, Math.PI / 2), new THREE.MeshStandardMaterial({ color: '#8ff7ff', transparent: true, opacity: 0.55, emissive: '#2a9db0', roughness: 0.05 }), u, 0, 3.75, 0);
+  for (let i = 0; i < 12; i++) { const a = i / 12 * Math.PI * 2; mesh(new THREE.SphereGeometry(0.12, 8, 6), new THREE.MeshBasicMaterial({ color: i % 2 ? '#7dff9a' : '#ffe14a' }), u, Math.cos(a) * 1.75, 3.33, Math.sin(a) * 1.75); }
+  const beam = new THREE.Mesh(new THREE.ConeGeometry(1.5, 3.0, 24, 1, true), new THREE.MeshBasicMaterial({ color: '#9dffb0', transparent: true, opacity: 0.16, side: THREE.DoubleSide, depthWrite: false })); beam.position.y = 1.7; u.add(beam);
+  return u; }
+function sledgehammer(col) { const h = new THREE.Group(); mesh(new THREE.CylinderGeometry(0.05, 0.05, 1.3, 8), M('#8a5a34'), h, 0, 0.45, 0);
+  mesh(new THREE.BoxGeometry(0.55, 0.32, 0.32), M(col), h, 0, 1.15, 0); mesh(new THREE.PlaneGeometry(0.4, 0.16), new THREE.MeshBasicMaterial({ map: labelTex('FOAM', { bg: col, fg: '#fff', w: 160, h: 64 }) }), h, 0, 1.15, 0.165); return h; }
+
 // ================================================================= comment requests (from @followerverse comments, 20 Nov 2026): toy/cartoon versions
 const SPECIAL = {
   '#aaedea8d4a558132': { ride: 'bulldozer', label: 'Bulldozer driver 🚜' },
@@ -250,8 +275,24 @@ const SPECIAL = {
   '#c804ad68bd066f9b': { costume: 'mod', label: 'The stinky chat mod (scares everyone away) 🦨' },
   '#8dec1ebe1d7b8f9c': { held: 'paintball', label: 'You asked for a blaster: here it is' },
   '#083849264d25331f': { held: 'paintball', label: 'You asked for a blaster: here it is 🔥' },
+  '#99eae483eb998bb1': { ride: 'ufo', label: 'Stole a UFO 🛸' },
+  '#7ac1f87c33ff890c': { costume: 'alienDisguise', label: 'A secret alien 👽🥸' },
+  '#139bd72605aca4a6': { costume: 'alien', label: 'An alien, to be unique 👽' },
+  '#98abcb8edb6ebcc9': { mount: 'gorilla', label: 'Gorilla squad 🦍' },
+  '#c44ac975ec79f3b9': { held: 'hammers', label: 'Dual (foam) sledgehammers 🔨🔨' },
+  '#0bf7c97a81194a00': { costume: 'medic', label: 'The medic who heals everyone 🩹' },
+  '#8cd5859a4a4a088b': { ride: 'jet', label: 'Brought a fighter jet ✈️' },
+  '#a52ee72fc5906741': { mount: 'lizard', label: "Riding Godzilla's little cousin 🦖" },
+  '#549a97833401592e': { ride: 'foodtruck', label: 'Kebab truck (with a cherry on top) 🥙' },
+  '#62db493d3de02d6d': { ride: 'monster', label: 'Monster truck 🛻' },
+  '#2d46a960c9005d71': { ride: 'monster', held: 'foam', label: 'Monster truck + a blaster 🛻' },
+  '#f8115b5d87f2114f': { ride: 'bus', label: 'Brought the big bus 🚌' },
+  '#f785c271bc93b7de': { ride: 'bus', label: 'Raid bus driver (thank the driver!) 🚌' },
+  '#707b3c3a209eac49': { costume: 'lion', label: 'The lion 🦁' },
+  '#179eb5e6a9fde94e': { costume: 'hotdog', label: 'Hot dog suit 🌭' },
+  '#dfd64c8bac2890ff': { held: 'chips', label: 'Never-ending snack pockets 🍿' },
 };
-const NOVEST = ['knight', 'boxer', 'alienDisguise', 'mod', 'villain'];
+const NOVEST = ['knight', 'boxer', 'alienDisguise', 'mod', 'villain', 'medic', 'hotdog'];
 function costumeParts(cos, g, head, arms, T) {
   const steel = MS('#dfe4ea', { metalness: 0.25, roughness: 0.3, emissive: '#2a2e36' });
   if (cos === 'knight') {
@@ -290,6 +331,21 @@ function costumeParts(cos, g, head, arms, T) {
     const mic = mesh(new THREE.CylinderGeometry(0.015, 0.015, 0.4, 5), M('#1d1d24'), head, 0.38, -0.2, 0.25); mic.rotation.set(0.9, 0, 0.6);
     mesh(new THREE.PlaneGeometry(0.42, 0.18), new THREE.MeshBasicMaterial({ map: labelTex('MOD', { bg: '#5865f2', fg: '#fff', w: 256, h: 110 }) }), g, 0.25, 1.62, 0.47);
     mesh(new THREE.CapsuleGeometry(0.58, 0.6, 4, 14), M('#4a4f5a'), g, 0, 1.6, 0).scale.set(1.02, 1, 0.86); }
+  if (cos === 'medic') { const W = M('#f4f6f8'), GR = M('#2fae5b');
+    mesh(new THREE.CapsuleGeometry(0.58, 0.62, 4, 14), W, g, 0, 1.58, 0).scale.set(1.03, 1, 0.86); mesh(new THREE.CylinderGeometry(0.62, 0.72, 0.55, 16, 1, true), W, g, 0, 0.98, 0);
+    mesh(new THREE.BoxGeometry(0.34, 0.11, 0.05), GR, g, 0, 1.72, 0.5); mesh(new THREE.BoxGeometry(0.11, 0.34, 0.05), GR, g, 0, 1.72, 0.5);
+    mesh(new THREE.TorusGeometry(0.47, 0.05, 6, 24), W, head, 0, 0.18, 0).rotation.x = Math.PI / 2; mesh(new THREE.BoxGeometry(0.16, 0.05, 0.03), GR, head, 0, 0.2, 0.48); mesh(new THREE.BoxGeometry(0.05, 0.16, 0.03), GR, head, 0, 0.2, 0.48);
+    const bag = new THREE.Group(); mesh(new THREE.BoxGeometry(0.6, 0.42, 0.3), M('#d94b4b'), bag); mesh(new THREE.BoxGeometry(0.26, 0.08, 0.02), W, bag, 0, 0, 0.16); mesh(new THREE.BoxGeometry(0.08, 0.26, 0.02), W, bag, 0, 0, 0.16);
+    mesh(new THREE.TorusGeometry(0.12, 0.025, 5, 12, Math.PI), M(DARK), bag, 0, 0.21, 0); bag.position.set(-0.85, 0.75, 0.25); bag.rotation.y = 0.3; g.add(bag); }
+  if (cos === 'lion') { const MANE = M('#b8651f'), FUR = M('#e0a44a');
+    for (let i = 0; i < 14; i++) { const a = i / 14 * Math.PI * 2; mesh(new THREE.SphereGeometry(0.22, 8, 6), MANE, head, Math.cos(a) * 0.5, 0.02 + Math.sin(a) * 0.5, -0.12); }
+    for (const s of [-1, 1]) mesh(new THREE.SphereGeometry(0.13, 8, 6), FUR, head, 0.34 * s, 0.5, 0.02);
+    mesh(new THREE.SphereGeometry(0.16, 10, 8), FUR, head, 0, -0.12, 0.44).scale.set(1.3, 0.8, 0.7); mesh(new THREE.SphereGeometry(0.06, 8, 6), M('#3a2412'), head, 0, -0.06, 0.55);
+    const tail = mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.9, 6), FUR, g, 0, 1.0, -0.6); tail.rotation.x = 0.9; mesh(new THREE.SphereGeometry(0.14, 8, 6), MANE, g, 0, 0.75, -1.0); }
+  if (cos === 'hotdog') { const BUN = M('#e5a958'), DOG = M('#c4553a'), MUST = new THREE.MeshLambertMaterial({ color: '#ffd21f', emissive: '#4a3a00' });
+    for (const s of [-1, 1]) mesh(new THREE.CapsuleGeometry(0.34, 1.9, 6, 12), BUN, g, 0.52 * s, 1.75, -0.12).scale.set(1, 1, 0.9);
+    mesh(new THREE.CapsuleGeometry(0.44, 2.1, 6, 14), DOG, g, 0, 1.95, -0.32);
+    for (let i = 0; i < 7; i++) { const z = mesh(new THREE.CylinderGeometry(0.045, 0.045, 0.42, 6), MUST, g, (i % 2 ? 0.1 : -0.1), 2.65 + i * 0.13, -0.05 - i * 0.02); z.rotation.z = i % 2 ? 1.1 : -1.1; } }
 }
 // ---------------------------------------------------------------- request rides, mounts, companions, held items
 function bulldozer() { const v = new THREE.Group(), Y = M('#f2b705'), D = M('#2b2d31');
@@ -345,7 +401,7 @@ function buildStage(T) {
   clearStage(); const notYet = !T.pos; const job = T.job[0];
   const R = raider(T, { holo: notYet }); stage.add(R); ACT = { T, R, job, extra: {} };   // ?dressed = preview costumes for anyone (testing only)
   const [L, Rt] = R.userData.arms;
-  const sp = T.special || {}; const handsBusy = ['minigun', 'sniper', 'smoke'].includes(sp.held) || ['knight', 'boxer'].includes(sp.costume) || !!sp.mount;
+  const sp = T.special || {}; const handsBusy = ['minigun', 'sniper', 'smoke', 'hammers'].includes(sp.held) || ['knight', 'boxer', 'medic'].includes(sp.costume) || !!sp.mount;
   // job pose + gear
   if (job === 'Distraction') { if (!handsBusy) { const tr = trumpet(); tr.position.set(0.05, -0.14, 0.62); tr.rotation.x = -0.25; R.userData.head.add(tr); Rt.rotation.set(-1.4, 0, -0.1); L.rotation.set(-1.25, 0, 0.15); }
     const bb = boombox(); bb.position.set(-1.25, 0, 0.6); bb.rotation.y = 0.4; stage.add(bb); ACT.extra.bb = bb; }
@@ -367,8 +423,9 @@ function buildStage(T) {
     else { item.position.set(sec === 'chips' ? -0.62 : 0.5, sec === 'chips' ? 1.05 : 1.25, sec === 'chips' ? 0.25 : -0.62); item.rotation.set(0, sec === 'chips' ? 0.3 : Math.PI, sec === 'chips' ? 0.3 : 1.2); R.add(item); }   // holstered / tucked
   }
   // ---- comment requests
-  if (sp.ride) { const v = sp.ride === 'bulldozer' ? bulldozer() : sp.ride === 'jet' ? jet() : tank(); const P = sp.ride === 'jet' ? [3.4, -4.6, -0.65, 0.75] : [2.9, -2.9, -0.55, 1];
-    v.position.set(P[0], 0, P[1]); v.rotation.y = P[2]; v.scale.setScalar(P[3]); stage.add(v); ACT.extra.ride = v; ACT.extra.big = sp.ride === 'jet'; ACT.extra.turret = v.userData.turret; }
+  if (sp.ride) { const v = sp.ride === 'bulldozer' ? bulldozer() : sp.ride === 'jet' ? jet() : sp.ride === 'tank' ? tank() : sp.ride === 'bus' ? bus() : sp.ride === 'foodtruck' ? foodTruck() : sp.ride === 'ufo' ? ufo() : vehicle(sp.ride, '#c0392b');
+    const P = sp.ride === 'jet' ? [3.4, -4.6, -0.65, 0.75] : sp.ride === 'bus' ? [3.6, -4.4, -0.6, 0.8] : sp.ride === 'ufo' ? [2.5, -3.0, 0, 1.15] : sp.ride === 'foodtruck' ? [3.0, -3.0, -2.0, 1] : [2.9, -2.9, -0.55, 1];
+    v.position.set(P[0], 0, P[1]); v.rotation.y = P[2]; v.scale.setScalar(P[3]); stage.add(v); ACT.extra.ride = v; ACT.extra.big = ['jet', 'bus', 'ufo'].includes(sp.ride); ACT.extra.turret = v.userData.turret; }
   if (sp.mount) { const m = sp.mount === 'gorilla' ? gorilla() : lizard(); m.position.set(0, 0, -0.4); stage.add(m); ACT.extra.mount = m; ACT.extra.big = true;
     const seat = sp.mount === 'gorilla' ? [0, 2.72, -0.6] : [0, 2.42, -0.15]; R.position.set(seat[0], seat[1], seat[2]); ACT.extra.baseY = seat[1];
     R.userData.legs.forEach(l => { l.rotation.x = -1.35; l.rotation.z = 0; }); R.userData.legs[0].rotation.z = 0.25; R.userData.legs[1].rotation.z = -0.25; Rt.rotation.set(-2.6, 0, -0.35); L.rotation.set(-0.6, 0, 0.5); }
@@ -378,6 +435,7 @@ function buildStage(T) {
   if (sp.held === 'sniper') { const sn = sniper(); sn.position.set(0.28, 1.95, 0.5); R.add(sn); Rt.rotation.set(-1.45, 0, -0.2); L.rotation.set(-1.55, 0, 0.75); }
   if (sp.held === 'smoke') { const sb = smokeBomb(); attach(Rt, sb, 0.04, -1.0, 0.1); Rt.rotation.set(-2.6, 0, -0.3);
     ACT.extra.puffs = Array.from({ length: 14 }, (_, i) => ({ s: glow(i % 2 ? '#b07cff' : '#8a4dff', 1, stage, 0, 0, 0, 0.5), a: i * 0.45, r: 0.6 + (i % 4) * 0.35, ph: i * 0.7 })); }
+  if (sp.held === 'hammers') { [[-1, '#ff8a1e', L], [1, '#2a7dd6', Rt]].forEach(([sd, c, arm]) => { const hm = sledgehammer(c); hm.position.set(0.62 * sd, 0.72, 0.62); hm.rotation.set(0.15, 0, -0.55 * sd); R.add(hm); arm.rotation.set(-0.7, 0, -0.35 * sd); }); }
   if (sp.costume === 'mod') ACT.extra.stink = Array.from({ length: 10 }, (_, i) => ({ s: glow('#9acd32', 0.7, stage, 0, 0, 0, 0.45), a: i * 0.63, ph: i }));
   if (T.wave && T.wave[1] === 'Snack Duty') { const s = snackCrate(); s.position.set(-1.5, 0, -0.2); s.rotation.y = 0.5; stage.add(s); }
   if (notYet) { const pad = mesh(new THREE.RingGeometry(0.75, 0.9, 48), new THREE.MeshBasicMaterial({ color: '#7ff3ff', transparent: true, opacity: 0.8, side: THREE.DoubleSide }), stage, 0, 0.03, 0); pad.rotation.x = -Math.PI / 2; ACT.extra.pad = pad; }
@@ -388,7 +446,7 @@ const $ = (id) => document.getElementById(id);
 const fmt = (n) => '#' + String(n).padStart(4, '0');
 function gearText(T) { const job = T.job[0]; const main = { 'Distraction': 'Trumpet + boombox', 'Scout': 'Binoculars + night vision', 'Getaway Driver': 'Keys to the ' + (T.ride ? T.ride[1].toLowerCase() : 'van'),
   'Hangar Hacker': 'Laptop + antenna pack', 'Alien Whisperer': 'Tinfoil antenna + an alien buddy', 'Area 51 Insider': 'Shades + a briefcase (ACCESS: ALL)' }[job];
-  const sp = T.special || {}; if (['minigun', 'sniper', 'smoke'].includes(sp.held) || ['knight', 'boxer'].includes(sp.costume) || sp.mount) return 'Job kit packed in the backpack (' + main.toLowerCase() + ')';
+  const sp = T.special || {}; if (['minigun', 'sniper', 'smoke', 'hammers'].includes(sp.held) || ['knight', 'boxer', 'medic'].includes(sp.costume) || sp.mount) return 'Job kit packed in the backpack (' + main.toLowerCase() + ')';
   return main + (T.sec && job !== 'Area 51 Insider' ? ' · ' + T.sec[1] : ''); }
 function showCard(T) {
   const J = T.job, c = $('card'); c.classList.toggle('notyet', !T.pos);
