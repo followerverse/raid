@@ -292,6 +292,17 @@ const SPECIAL = {
   '#707b3c3a209eac49': { costume: 'lion', label: 'The lion 🦁' },
   '#179eb5e6a9fde94e': { costume: 'hotdog', label: 'Hot dog suit 🌭' },
   '#dfd64c8bac2890ff': { held: 'chips', label: 'Never-ending snack pockets 🍿' },
+  // the 10 Raid Captains from Episode 2 (creator, 24 Nov): a RAID CAPTAIN tag on their ID
+  '#2bd41dfd03d4afb4': { captain: true },
+  '#08796c3060a04d56': { captain: true },
+  '#0c2fd0d97c387c42': { captain: true },
+  '#d48a2eb662ed9eee': { captain: true },
+  '#8d490e1bfd8c776f': { captain: true },
+  '#c55c336d672750f0': { captain: true },
+  '#08d789609e6e3572': { captain: true },
+  '#62179a55abb5a70d': { captain: true },
+  '#36f9a08e6b920435': { captain: true },
+  '#14018a433c8c4dca': { captain: true },
   '#6e1d7f6f42a425ad': { fallen: true, label: 'The Sacrificer: took every beam (Episode 3) 🫡' },   // creator, 23 Nov: only his cap is left
 };
 const NOVEST = ['knight', 'boxer', 'alienDisguise', 'mod', 'villain', 'medic', 'hotdog'];
@@ -403,6 +414,7 @@ function buildStage(T) {
   clearStage(); const notYet = !T.pos; const job = T.job[0];
   const R = raider(T, { holo: notYet }); stage.add(R); ACT = { T, R, job, extra: {} };   // ?dressed = preview costumes for anyone (testing only)
   const sp0 = T.special || {};
+  if (sp0.captain) { const tg = new THREE.Sprite(new THREE.SpriteMaterial({ map: labelTex('⭐ RAID CAPTAIN', { bg: '#f2842a', fg: '#ffffff', w: 640, h: 120 }), transparent: true, depthTest: false })); tg.scale.set(2.3, 0.43, 1); tg.position.set(0, 3.35, 0); tg.renderOrder = 9; R.add(tg); }
   if (sp0.fallen) { R.visible = false; const cap = new THREE.Group(), red = M('#e53935');
     mesh(new THREE.SphereGeometry(0.62, 18, 10, 0, Math.PI * 2, 0, Math.PI / 2), red, cap, 0, 0, 0); const brim = mesh(new THREE.BoxGeometry(0.78, 0.07, 0.62), red, cap, 0, 0.03, 0.62);
     cap.position.set(0.1, 0.02, 0.35); cap.rotation.set(0.08, 0.7, 0.06); stage.add(cap); ACT.extra.cap = cap;
@@ -462,10 +474,10 @@ function showCard(T) {
   $('cid').innerHTML = T.pos ? `RAIDER <b>${fmt(T.pos)}</b>` : 'NOT IN THE RAID YET';
   $('wave').textContent = T.wave ? `${T.wave[2]} ${T.wave[1].toUpperCase()}` : '⏳ NO WAVE'; $('wave').className = 'pill ' + (T.wave ? T.wave[1].replace(/\s/g, '') : 'none');
   $('handle').textContent = '@' + T.h;
-  $('job').innerHTML = `${J[1]} ${J[0].toUpperCase()}` + (J[0] === 'Alien Whisperer' ? ' <span class="rare">RARE · 7%</span>' : J[0] === 'Area 51 Insider' ? ' <span class="legend">LEGENDARY · 1%</span>' : J[0] === 'Sacrificer' ? ' <span class="legend">FALLEN HERO · 1 OF 1</span>' : '');
+  $('job').innerHTML = `${J[1]} ${J[0].toUpperCase()}` + (J[0] === 'Alien Whisperer' ? ' <span class="rare">RARE · 7%</span>' : J[0] === 'Area 51 Insider' ? ' <span class="legend">LEGENDARY · 1%</span>' : J[0] === 'Sacrificer' ? ' <span class="legend">FALLEN HERO · 1 OF 1</span>' : '') + (T.special && T.special.captain ? ' <span class="captain">⭐ RAID CAPTAIN</span>' : '');
   $('mission').textContent = 'Mission: ' + J[3];
   $('gear').textContent = '🎒 ' + gearText(T);
-  $('req').textContent = T.special ? '⭐ Your request: ' + T.special.label : ''; $('req').hidden = !T.special || !!T.special.fallen;
+  $('req').textContent = T.special ? '⭐ Your request: ' + T.special.label : ''; $('req').hidden = !T.special || !T.special.label || !!T.special.fallen;
   $('wait').textContent = `Your gear is packed. Follow @${ACCOUNT} to join the raid.`;
   c.hidden = false; $('actions').hidden = false; $('follow').hidden = !!T.pos; $('save').hidden = !T.pos;
 }
@@ -484,6 +496,7 @@ async function storyCard() {
   g.fillStyle = '#fff'; g.textAlign = 'center'; g.font = F(92); g.fillText('STORM AREA 51', 540, 225); g.font = F(42); g.fillText('RAIDER ID', 540, 285);
   g.fillStyle = '#FFFDF7'; g.strokeStyle = '#3A2412'; g.lineWidth = 10; g.beginPath(); g.roundRect(60, 1250, 960, 560, 44); g.fill(); g.stroke();
   g.textAlign = 'left'; g.fillStyle = '#3A2412'; g.font = F(70); g.fillText('RAIDER', 110, 1355); g.fillStyle = '#E0A800'; g.fillText(fmt(T.pos), 410, 1355);
+  if (T.special && T.special.captain) { g.fillStyle = '#f2842a'; g.beginPath(); g.roundRect(670, 1298, 320, 72, 36); g.fill(); g.fillStyle = '#fff'; g.font = F(30); g.textAlign = 'center'; g.fillText('⭐ RAID CAPTAIN', 830, 1345); g.textAlign = 'left'; }
   g.fillStyle = '#c0392b'; g.font = F(56); g.fillText('@' + T.h, 110, 1440);
   g.fillStyle = '#3A2412'; g.font = F(50); g.fillText(`${T.job[1]}  ${T.job[0].toUpperCase()}`, 110, 1530);
   g.fillStyle = '#7A6656'; g.font = 'italic ' + F(36); g.fillText('Mission: ' + T.job[3], 110, 1595);
