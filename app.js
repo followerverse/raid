@@ -53,7 +53,8 @@ function traits(h, pos) {
   if (W && W[1] === 'Snack Duty') sec = SECOND[2];                     // snack duty always brings chips
   const sp = SPECIAL[h] || SPECIAL['#' + sha256js(enc('raid51-req' + h)).slice(0, 16)] || null;   // public copy stores requests by scrambled handle
   if (sp && SECOND.some(x => x[0] === sp.held)) sec = SECOND.find(x => x[0] === sp.held);
-  return { h, pos, job: J, wave: W, sec, special: sp, ride: J[0] === 'Getaway Driver' ? pick(h, 'ride', RIDES) : null,
+  const JOB = sp && sp.fallen ? ['Sacrificer', '🫡', 0, 'Took every beam for all of us'] : J;
+  return { h, pos, job: JOB, wave: W, sec, special: sp, ride: J[0] === 'Getaway Driver' ? pick(h, 'ride', RIDES) : null,
     skin: pick(h, 'skin', SKIN), shirt: W && W[1] === 'Front Runner' ? '#f5c542' : pick(h, 'shirt', SHIRTS), cap: pick(h, 'cap', SHIRTS), pants: pick(h, 'pants', ['#3b3f4a', '#4a4f3a', '#2f3b5a', '#5a4a3a']) };
 }
 let LIST = { salt: 'raid51-v1', hashes: [] };
@@ -291,6 +292,7 @@ const SPECIAL = {
   '#707b3c3a209eac49': { costume: 'lion', label: 'The lion 🦁' },
   '#179eb5e6a9fde94e': { costume: 'hotdog', label: 'Hot dog suit 🌭' },
   '#dfd64c8bac2890ff': { held: 'chips', label: 'Never-ending snack pockets 🍿' },
+  '#6e1d7f6f42a425ad': { fallen: true, label: 'The Sacrificer: took every beam (Episode 3) 🫡' },   // creator, 23 Nov: only his cap is left
 };
 const NOVEST = ['knight', 'boxer', 'alienDisguise', 'mod', 'villain', 'medic', 'hotdog'];
 function costumeParts(cos, g, head, arms, T) {
@@ -400,6 +402,13 @@ function attach(arm, obj, x, y, z) { obj.position.set(x, y, z); arm.add(obj); re
 function buildStage(T) {
   clearStage(); const notYet = !T.pos; const job = T.job[0];
   const R = raider(T, { holo: notYet }); stage.add(R); ACT = { T, R, job, extra: {} };   // ?dressed = preview costumes for anyone (testing only)
+  const sp0 = T.special || {};
+  if (sp0.fallen) { R.visible = false; const cap = new THREE.Group(), red = M('#e53935');
+    mesh(new THREE.SphereGeometry(0.62, 18, 10, 0, Math.PI * 2, 0, Math.PI / 2), red, cap, 0, 0, 0); const brim = mesh(new THREE.BoxGeometry(0.78, 0.07, 0.62), red, cap, 0, 0.03, 0.62);
+    cap.position.set(0.1, 0.02, 0.35); cap.rotation.set(0.08, 0.7, 0.06); stage.add(cap); ACT.extra.cap = cap;
+    const bitM = new THREE.MeshBasicMaterial({ color: '#ffb08a', transparent: true, opacity: 0.9, toneMapped: false });
+    ACT.extra.embers = Array.from({ length: 26 }, (_, i) => { const b = mesh(new THREE.BoxGeometry(0.09, 0.09, 0.09), bitM.clone(), stage, 0, 0, 0); b.castShadow = false; return { b, a: i * 2.4, r: 0.25 + (i % 5) * 0.12, ph: (i * 0.137) % 1 }; });
+    glow('#ff5a3c', 2.2, stage, 0.1, 0.25, 0.35, 0.35); return; }
   const [L, Rt] = R.userData.arms;
   const sp = T.special || {}; const handsBusy = ['minigun', 'sniper', 'smoke', 'hammers'].includes(sp.held) || ['knight', 'boxer', 'medic'].includes(sp.costume) || !!sp.mount;
   // job pose + gear
@@ -444,7 +453,7 @@ function buildStage(T) {
 // ================================================================= UI
 const $ = (id) => document.getElementById(id);
 const fmt = (n) => '#' + String(n).padStart(4, '0');
-function gearText(T) { const job = T.job[0]; const main = { 'Distraction': 'Trumpet + boombox', 'Scout': 'Binoculars + night vision', 'Getaway Driver': 'Keys to the ' + (T.ride ? T.ride[1].toLowerCase() : 'van'),
+function gearText(T) { if (T.special && T.special.fallen) return 'Only his red cap was left on the road 🧢'; const job = T.job[0]; const main = { 'Distraction': 'Trumpet + boombox', 'Scout': 'Binoculars + night vision', 'Getaway Driver': 'Keys to the ' + (T.ride ? T.ride[1].toLowerCase() : 'van'),
   'Hangar Hacker': 'Laptop + antenna pack', 'Alien Whisperer': 'Tinfoil antenna + an alien buddy', 'Area 51 Insider': 'Shades + a briefcase (ACCESS: ALL)' }[job];
   const sp = T.special || {}; if (['minigun', 'sniper', 'smoke', 'hammers'].includes(sp.held) || ['knight', 'boxer', 'medic'].includes(sp.costume) || sp.mount) return 'Job kit packed in the backpack (' + main.toLowerCase() + ')';
   return main + (T.sec && job !== 'Area 51 Insider' ? ' · ' + T.sec[1] : ''); }
@@ -453,10 +462,10 @@ function showCard(T) {
   $('cid').innerHTML = T.pos ? `RAIDER <b>${fmt(T.pos)}</b>` : 'NOT IN THE RAID YET';
   $('wave').textContent = T.wave ? `${T.wave[2]} ${T.wave[1].toUpperCase()}` : '⏳ NO WAVE'; $('wave').className = 'pill ' + (T.wave ? T.wave[1].replace(/\s/g, '') : 'none');
   $('handle').textContent = '@' + T.h;
-  $('job').innerHTML = `${J[1]} ${J[0].toUpperCase()}` + (J[0] === 'Alien Whisperer' ? ' <span class="rare">RARE · 7%</span>' : J[0] === 'Area 51 Insider' ? ' <span class="legend">LEGENDARY · 1%</span>' : '');
+  $('job').innerHTML = `${J[1]} ${J[0].toUpperCase()}` + (J[0] === 'Alien Whisperer' ? ' <span class="rare">RARE · 7%</span>' : J[0] === 'Area 51 Insider' ? ' <span class="legend">LEGENDARY · 1%</span>' : J[0] === 'Sacrificer' ? ' <span class="legend">FALLEN HERO · 1 OF 1</span>' : '');
   $('mission').textContent = 'Mission: ' + J[3];
   $('gear').textContent = '🎒 ' + gearText(T);
-  $('req').textContent = T.special ? '⭐ Your request: ' + T.special.label : ''; $('req').hidden = !T.special;
+  $('req').textContent = T.special ? '⭐ Your request: ' + T.special.label : ''; $('req').hidden = !T.special || !!T.special.fallen;
   $('wait').textContent = `Your gear is packed. Follow @${ACCOUNT} to join the raid.`;
   c.hidden = false; $('actions').hidden = false; $('follow').hidden = !!T.pos; $('save').hidden = !T.pos;
 }
@@ -511,6 +520,7 @@ function frame() {
     if (ACT.extra.emus) ACT.extra.emus.forEach((e, i) => { e.userData.neck.rotation.x = 0.25 + Math.sin(t * 4 + i) * 0.25; e.position.y = Math.abs(Math.sin(t * 3 + i)) * 0.05; });
     if (ACT.extra.puffs) ACT.extra.puffs.forEach(p => { const k = ((t * 0.35 + p.ph) % 1); p.s.position.set(Math.cos(p.a + t * 0.3) * p.r * (1 + k), 0.3 + k * 2.6, Math.sin(p.a + t * 0.3) * p.r * (1 + k) + 0.2); p.s.scale.setScalar(0.8 + k * 2.2); p.s.material.opacity = 0.55 * (1 - k); });
     if (ACT.extra.stink) ACT.extra.stink.forEach(p => { const k = ((t * 0.4 + p.ph * 0.1) % 1); p.s.position.set(Math.cos(p.a + t) * 0.9, 1.0 + k * 2.4, Math.sin(p.a + t) * 0.9); p.s.material.opacity = 0.5 * (1 - k); });
+    if (ACT.extra.embers) ACT.extra.embers.forEach(e => { const k = (t * 0.28 + e.ph) % 1; e.b.position.set(0.1 + Math.cos(e.a + t * 0.4) * e.r * (1 + k), 0.35 + k * 3.0, 0.35 + Math.sin(e.a + t * 0.4) * e.r * (1 + k)); e.b.rotation.set(t * 2 + e.a, t * 3, 0); e.b.material.opacity = 0.9 * (1 - k); });
     if (ACT.extra.insider) { U.arms[1].rotation.x = -2.2 + Math.sin(t * 1.5) * 0.08; }
     if (ACT.extra.pad) { ACT.extra.pad.material.opacity = 0.5 + 0.35 * Math.sin(t * 3); HOLO.opacity = 0.28 + 0.12 * Math.sin(t * 3); } }
   DUST.forEach(d => d.s.position.set(d.x + Math.sin(t * 0.3 + d.ph) * 1.5, d.y + Math.sin(t * 0.7 + d.ph) * 0.3, d.z));
